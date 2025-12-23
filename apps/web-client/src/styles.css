@@ -14,14 +14,15 @@ main {
     gap: 15px;
 }
 
+/* Base styles */
 h1 {
-    /* Words style */
     font-size: 20px;
     font-weight: 600;
     margin-bottom: 10px;
     color: #0078d4;
 }
 
+/* Redaction button styles */
 button {
     background-color: #0078d4;
     color: white;
