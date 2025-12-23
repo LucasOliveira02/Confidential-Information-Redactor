@@ -1,0 +1,29 @@
+{
+  "name": "confidential-information-redactor",
+  "version": "0.0.1",
+  "config": {
+    "app_to_debug": "word",
+    "app_type_to_debug": "desktop",
+    "dev_server_port": 3000
+  },
+  "scripts": {
+    "start": "npm run build && concurrently \"npm run watch\" \"npm run dev-server\" \"office-addin-debugging start manifest.xml\"",
+    "dev-server": "ts-node scripts/verify-certs.ts && http-server dist -S -C cert.pem -K key.pem --cors . -p 3000",
+    "watch": "concurrently \"tsc -w\" \"nodemon --watch src/index.html --watch src/styles.css --exec \\\"cp src/index.html src/styles.css dist/\\\"\"",
+    "build": "tsc && cp src/index.html src/styles.css dist/",
+    "stop": "office-addin-debugging stop manifest.xml",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "devDependencies": {
+    "@types/office-js": "^1.0.377",
+    "concurrently": "^8.2.2",
+    "http-server": "^14.1.1",
+    "nodemon": "^3.1.11",
+    "office-addin-debugging": "^5.1.6",
+    "office-addin-dev-certs": "^1.13.5",
+    "office-addin-manifest": "^1.13.6",
+    "semver": "^7.7.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  }
+}

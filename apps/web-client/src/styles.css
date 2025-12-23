@@ -1,0 +1,58 @@
+body {
+    font-family: "Segoe UI", "Segoe UI Web (West European)", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 20px;
+    background-color: #f3f2f1;
+    color: #323130;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+h1 {
+    /* Words style */
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #0078d4;
+}
+
+button {
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+button:hover {
+    background-color: #106ebe;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.description {
+    text-align: center;
+    color: #605e5c;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.ms-welcome__header {
+    margin-top: 20px;
+}
