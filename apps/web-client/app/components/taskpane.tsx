@@ -1,6 +1,4 @@
 /*
- * TaskPane Component
- * -----------------
  * This is the main UI for the Office Add‑in. It orchestrates the
  * initialization of the Office environment, handles user interactions
  * (redact & revert), and displays a live status feed that reflects the

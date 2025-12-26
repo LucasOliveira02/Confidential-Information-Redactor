@@ -56,9 +56,9 @@ export async function addConfidentialHeader(context: Word.RequestContext) {
 /**
  * Core redaction workflow.
  *
- * 1️⃣ Prepare the document (enable tracking + add header).
- * 2️⃣ Pull the full text and ask the AI service to identify PII.
- * 3️⃣ For each piece of sensitive data, replace it with a redacted token.
+ *  1. Prepare the document (enable tracking + add header).
+ *  2. Pull the full text and ask the AI service to identify PII.
+ *  3. For each piece of sensitive data, replace it with a redacted token.
  *    While we process each item we update the UI via `onProgress` so the
  *    user sees a live "mission log".
  */
@@ -66,12 +66,12 @@ export async function formatAndRedactDocument(
     context: Word.RequestContext,
     onProgress: (msg: string) => void
 ) {
-    // ----- Step 1: Preparation -----
+    // Step 1: Preparation
     onProgress('Setting up document tracking...');
     await enableTrackChanges(context);
     await addConfidentialHeader(context);
 
-    // ----- Step 2: Load document text -----
+    // Step 2: Load document text
     onProgress('Reading document content...');
     const body = context.document.body;
     body.load('text');
@@ -83,7 +83,7 @@ export async function formatAndRedactDocument(
         return;
     }
 
-    // ----- Step 3: Ask AI for PII -----
+    // Step 3: Ask AI for PII
     onProgress('AI is identifying sensitive data...');
     try {
         const response = await fetch('/api/redact', {
@@ -103,7 +103,7 @@ export async function formatAndRedactDocument(
             return;
         }
 
-        // ----- Step 4: Redact each item -----
+        // Step 4: Redact each item
         let count = 0;
         for (const item of pii) {
             if (!item.trim()) continue;
@@ -116,7 +116,7 @@ export async function formatAndRedactDocument(
             await context.sync();
 
             for (const found of searchResults.items) {
-                // --- Hyperlink handling ---
+                // Hyperlink handling
                 // Turn tracking off temporarily so the hyperlink removal isn't logged.
                 context.document.changeTrackingMode = Word.ChangeTrackingMode.off;
                 found.hyperlink = '';
@@ -138,7 +138,7 @@ export async function formatAndRedactDocument(
         throw err;
     }
 
-    // Final status – everything is done.
+    // Final status when everything is done.
     onProgress('Done!');
 }
 
