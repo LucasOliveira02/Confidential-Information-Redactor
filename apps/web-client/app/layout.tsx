@@ -6,6 +6,9 @@ import { Polyfill } from './components/polyfill';
 
 export const metadata: Metadata = {
     title: 'Confidential Information Redactor',
+    icons: {
+        icon: '/icon.png',
+    },
 };
 
 export default function RootLayout({

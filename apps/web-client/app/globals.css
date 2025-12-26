@@ -1,18 +1,20 @@
 /*
  * Global CSS Variables
  * Defines the color palette and shared design tokens (border radius, transitions).
- * Uses a professional "Office Blue" theme for consistency with Microsoft products.
+ * Uses a "Operation Blackout" Navy theme for a secure, premium look.
  */
 :root {
-  --primary: #005a9e;
-  /* Darker Office Blue for better contrast */
-  --primary-hover: #004578;
-  --bg-color: #f3f2f1;
-  --surface-color: #ffffff;
-  --text-main: #201f1e;
-  --text-secondary: #605e5c;
-  --border-color: #edebe9;
-  --shadow: 0 1.6px 3.6px 0 rgba(0, 0, 0, 0.132), 0 0.3px 0.9px 0 rgba(0, 0, 0, 0.108);
+  --bg-color: #192442;
+  /* Exact Match from Icon */
+  --surface-color: #242d4a;
+  --text-main: #ffffff;
+  --text-secondary: #94a3b8;
+  --border-color: #3b4560;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --primary: #38bdf8;
+  --primary-hover: #0ea5e9;
+  --header-bg: #192442;
+  /* Solid match (opaque) to blend perfectly */
   --radius: 4px;
   --transition: all 0.2s ease;
 }
@@ -27,11 +29,6 @@ body {
   padding: 0;
   font-family: "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
     "Droid Sans", "Helvetica Neue", sans-serif;
-  color: #333;
-  background-color: #f3f2f1;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  color: var(--text-main);
+  background-color: var(--bg-color);
 }
