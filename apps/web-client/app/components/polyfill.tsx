@@ -3,10 +3,9 @@
 import React from 'react';
 
 /**
- * A component that injects critical polyfills strictly before Next.js hydration.
- * patches:
- * 1. console.error: Suppresses known non-critical React warnings.
- * 2. window.history: Prevents "SecurityError" on restricted Office runtime environments.
+ * A script that injects polyfills before Next.js to prevent:
+ * 1. console.error: Suppresses known React warnings.
+ * 2. window.history: Prevents "SecurityError" on Office runtime environments.
  */
 export function Polyfill() {
     const polyfillScript = `

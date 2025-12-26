@@ -1,28 +1,54 @@
 /*
- * Global CSS Variables
- * Defines the color palette and shared design tokens (border radius, transitions).
- * Uses a "Operation Blackout" Navy theme for a secure, premium look.
+ * Global CSS Variables & Base Styles
+ * ---------------------------------
+ * This file defines the design tokens (colors, spacing, radii, etc.)
+ * used throughout the Office Add‑in. The palette follows the "Operation
+ * Blackout" theme – a dark navy background with bright accent colors for
+ * a premium, security‑focused look.
+ *
+ * The variables are scoped to `:root` so they can be referenced from any
+ * component via `var(--variable-name)`. Keeping them in a single place makes
+ * future theming or brand updates trivial.
  */
 :root {
+  /* Core background and surface */
   --bg-color: #192442;
-  /* Exact Match from Icon */
+  /* Dark navy – main canvas */
   --surface-color: #242d4a;
+  /* Slightly lighter for cards/panels */
+
+  /* Text */
   --text-main: #ffffff;
+  /* Primary text – pure white */
   --text-secondary: #94a3b8;
+  /* Secondary text – muted gray */
+
+  /* Borders & shadows */
   --border-color: #3b4560;
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  /* Subtle border for separation */
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+    0 2px 4px -1px rgba(0, 0, 0, 0.3);
+
+  /* Accent colors */
   --primary: #38bdf8;
+  /* Bright cyan for primary actions */
   --primary-hover: #0ea5e9;
+  /* Hover state – a touch darker */
   --header-bg: #192442;
-  /* Solid match (opaque) to blend perfectly */
+  /* Header shares the main background */
+
+  /* Misc tokens */
   --radius: 4px;
+  /* Rounded corners for buttons, cards */
   --transition: all 0.2s ease;
+  /* Smooth UI transitions */
 }
 
 /*
  * Base Document Styles
- * Sets up the default font stack using Segoe UI (standard for Office Add-ins).
- * Resets margins and applies the base background color.
+ * --------------------
+ * The body resets default margins, applies the global font stack (Segoe UI is
+ * the default for Office Add‑ins), and sets the background colour.
  */
 body {
   margin: 0;
