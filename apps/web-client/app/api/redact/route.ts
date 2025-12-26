@@ -1,73 +1,111 @@
+/*
+ * This endpoint receives a block of text, forwards it to Google's Gemini
+ * generative AI model, and returns a JSON array of detected sensitive
+ * strings (PII, SPI, PHI, etc.). The response is deliberately minimal –
+ * just the array – so the client can iterate over it and perform redaction.
+ *
+ * Expected request body:
+ *   { "text": "...document contents..." }
+ *
+ * Successful response shape:
+ *   { "pii": ["John Doe", "123-45-6789", ...] }
+ *
+ * Errors are returned with a 500 status and an `error` field describing the
+ * problem. In development you will also see the raw AI response under the
+ * `raw` key to aid debugging.
+ */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
 /**
- * POST Handler for the /api/redact endpoint.
- * Receives document text, sends it to Google's Gemini AI for PII analysis,
- * and returns a list of sensitive strings to be redacted.
- * 
- * @param req - The incoming HTTP request containing the JSON body with `text`.
- * @returns {NextResponse} JSON response containing the array of PII strings or an error message.
+ * POST handler for the /api/redact endpoint.
+ *
+ * 1️⃣ Validate the request payload and ensure the Gemini API key is set.
+ * 2️⃣ Initialise the Generative AI client and configure the model.
+ * 3️⃣ Build a system prompt that asks the model to list every piece of
+ *    sensitive information in the supplied text.
+ * 4️⃣ Parse the model's response, sanitising any markdown wrappers.
+ * 5️⃣ Return the extracted array, or an error if parsing fails.
  */
 export async function POST(req: Request) {
     console.log(">>> API called");
     try {
         const { text } = await req.json();
 
-        // Use env var for key
+        // ---------------------------------------------------------------------
+        // 1️⃣ Environment validation
+        // ---------------------------------------------------------------------
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             console.error("GEMINI_API_KEY is not set");
-            return NextResponse.json({ error: "GEMINI_API_KEY is not set" }, { status: 500 });
+            return NextResponse.json(
+                { error: "GEMINI_API_KEY is not set" },
+                { status: 500 }
+            );
         }
 
-        // Initialize Google Generative AI with the API key
+        // ---------------------------------------------------------------------
+        // 2️⃣ Initialise Gemini client
+        // ---------------------------------------------------------------------
         const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel(
+            {
+                model: "gemini-2.0-flash",
+                generationConfig: { temperature: 0 },
+            },
+            { apiVersion: "v1beta" }
+        );
 
-        // Use the gemini-2.0-flash model (v1beta) for optimal speed and reasoning
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }, { apiVersion: "v1beta" });
+        // ---------------------------------------------------------------------
+        // 3️⃣ AI Prompt
+        // ---------------------------------------------------------------------
+        const prompt = `Identify all sensitive information in the following text that should be redacted for confidentiality. Include but do not limit to:
 
-        /**
-         * AI SYSTEM PROMPT
-         * This prompt is carefully engineered to:
-         * 1. Define broad categories of sensitive data (PII, SPI, PHI, etc.).
-         * 2. Demand a raw JSON array format for programmatic parsing.
-         */
-        const prompt = `Identify all sensitive information in the following text that should be redacted for confidentiality. This includes but is not limited to:
-    
-    1. PII (Personally Identifiable Information): Names in every context, physical addresses, email addresses, phone numbers, dates of birth, age, gender, race, origin, religion.
-    2. SPI (Sensitive Personal Information): Biometric data, sexual orientation, criminal records, trade union membership.
-    3. PHI (Protected Health Information): Medical records, health insurance info, treatments, diagnoses, prescriptions.
-    4. Financial Data: Credit card numbers, bank account numbers, salary/compensation, tax IDs, credit scores.
-    5. Government ID Numbers: SSNs, passport numbers, driver's licenses, employee IDs, national ID numbers.
-    6. Business/Proprietary Data: Internal project names, proprietary code names, trade secrets, internal URLs/IPs.
+1. PII (names, addresses, emails, phone numbers, DOB, gender, race, religion)
+2. SPI (biometrics, sexual orientation, criminal records, union membership)
+3. PHI (medical records, health insurance, diagnoses, prescriptions)
+4. Financial data (credit cards, bank accounts, salaries, tax IDs)
+5. Government IDs (SSN, passport, driver’s license, employee IDs)
+6. Business secrets (project names, code names, internal URLs/IPs)
 
-    Return ONLY a JSON array of the exact strings found. If none, return an empty array.
-    Do not include any explanation or markdown formatting, just the raw JSON array.
-    
-    Text to analyze:
-    "${text}"`;
+Return ONLY a JSON array of the exact strings found. If none are found, return an empty array.
+
+Text to analyse:
+"${text}"`;
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        let textResponse = response.text();
+        let rawText = response.text();
 
-        // Clean up potential markdown formatting (e.g. ```json ... ```)
-        textResponse = textResponse.replace(/^```json/i, '').replace(/```$/, '').trim();
+        // ---------------------------------------------------------------------
+        // 4️⃣ Clean up the response – strip any markdown fences and extract []
+        // ---------------------------------------------------------------------
+        const startIdx = rawText.indexOf('[');
+        const endIdx = rawText.lastIndexOf(']');
+        const cleaned =
+            startIdx !== -1 && endIdx !== -1
+                ? rawText.substring(startIdx, endIdx + 1)
+                : rawText.replace(/^```json/i, "").replace(/```$/, "").trim();
 
         let pii: string[] = [];
         try {
-            // Parse the cleaned text response into a JSON array
-            pii = JSON.parse(textResponse);
+            pii = JSON.parse(cleaned);
+            if (!Array.isArray(pii)) pii = [];
         } catch {
-            console.error("Failed to parse JSON", textResponse);
-            return NextResponse.json({ error: "Failed to parse AI response", raw: textResponse }, { status: 500 });
+            console.error("Failed to parse JSON", rawText);
+            return NextResponse.json(
+                { error: "Failed to parse AI response. Expected a list.", raw: rawText },
+                { status: 500 }
+            );
         }
 
+        // ---------------------------------------------------------------------
+        // 5️⃣ Return the list of detected items
+        // ---------------------------------------------------------------------
         return NextResponse.json({ pii });
     } catch (error: unknown) {
         console.error("AI Error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

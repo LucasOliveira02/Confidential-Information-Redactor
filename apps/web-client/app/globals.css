@@ -1,37 +1,60 @@
 /*
- * Global CSS Variables
- * Defines the color palette and shared design tokens (border radius, transitions).
- * Uses a professional "Office Blue" theme for consistency with Microsoft products.
+ * Global CSS Variables & Base Styles
+ * ---------------------------------
+ * This file defines the design tokens (colors, spacing, radii, etc.)
+ * used throughout the Office Add‑in. The palette follows the "Operation
+ * Blackout" theme – a dark navy background with bright accent colors for
+ * a premium, security‑focused look.
+ *
+ * The variables are scoped to `:root` so they can be referenced from any
+ * component via `var(--variable-name)`. Keeping them in a single place makes
+ * future theming or brand updates trivial.
  */
 :root {
-  --primary: #005a9e;
-  /* Darker Office Blue for better contrast */
-  --primary-hover: #004578;
-  --bg-color: #f3f2f1;
-  --surface-color: #ffffff;
-  --text-main: #201f1e;
-  --text-secondary: #605e5c;
-  --border-color: #edebe9;
-  --shadow: 0 1.6px 3.6px 0 rgba(0, 0, 0, 0.132), 0 0.3px 0.9px 0 rgba(0, 0, 0, 0.108);
+  /* Core background and surface */
+  --bg-color: #192442;
+  /* Dark navy – main canvas */
+  --surface-color: #242d4a;
+  /* Slightly lighter for cards/panels */
+
+  /* Text */
+  --text-main: #ffffff;
+  /* Primary text – pure white */
+  --text-secondary: #94a3b8;
+  /* Secondary text – muted gray */
+
+  /* Borders & shadows */
+  --border-color: #3b4560;
+  /* Subtle border for separation */
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+    0 2px 4px -1px rgba(0, 0, 0, 0.3);
+
+  /* Accent colors */
+  --primary: #38bdf8;
+  /* Bright cyan for primary actions */
+  --primary-hover: #0ea5e9;
+  /* Hover state – a touch darker */
+  --header-bg: #192442;
+  /* Header shares the main background */
+
+  /* Misc tokens */
   --radius: 4px;
+  /* Rounded corners for buttons, cards */
   --transition: all 0.2s ease;
+  /* Smooth UI transitions */
 }
 
 /*
  * Base Document Styles
- * Sets up the default font stack using Segoe UI (standard for Office Add-ins).
- * Resets margins and applies the base background color.
+ * --------------------
+ * The body resets default margins, applies the global font stack (Segoe UI is
+ * the default for Office Add‑ins), and sets the background colour.
  */
 body {
   margin: 0;
   padding: 0;
   font-family: "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
     "Droid Sans", "Helvetica Neue", sans-serif;
-  color: #333;
-  background-color: #f3f2f1;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  color: var(--text-main);
+  background-color: var(--bg-color);
 }

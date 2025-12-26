@@ -1,85 +1,90 @@
-/* global Word */
+/* global Word, Office */
 
 /**
- * Enables "Track Changes" for the document to ensure all redactions are recorded.
- * Uses the Word Requirement Set 1.5 to check for support before enabling.
- * 
- * @param context - The Word RequestContext.
+ * Enable Track Changes in the current Word document.
+ *
+ * Track Changes lets the user review every modification we make –
+ * they can accept or reject each redaction later. This is safer than
+ * silently deleting text because it leaves a clear audit trail.
  */
 export async function enableTrackChanges(context: Word.RequestContext) {
-    // Check if Tracking Changes is supported (Requirement Set 1.5)
+    // Word API 1.5 introduced the `changeTrackingMode` property.
     if (Office.context.requirements.isSetSupported('WordApi', '1.5')) {
-        context.document.load("changeTrackingMode");
+        // Load the current tracking mode so we can inspect it.
+        context.document.load('changeTrackingMode');
         await context.sync();
 
-        // Only set if not already tracked to avoid unnecessary operations
+        // Turn tracking on only if it isn't already active.
         if (context.document.changeTrackingMode !== Word.ChangeTrackingMode.trackAll) {
             context.document.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
             await context.sync();
         }
     } else {
-        console.warn("Tracking Changes is not supported in this version of Word.");
+        console.warn("Tracking Changes isn't supported in this Word environment.");
     }
 }
 
 /**
- * Inserts a "CONFIDENTIAL DOCUMENT" header if one does not already exist.
- * This ensures the document is clearly marked after processing.
- * 
- * @param context - The Word RequestContext.
+ * Insert a bold, orange‑red header that marks the document as confidential.
+ *
+ * The header is added to the first section only. If the header already
+ * exists we skip insertion – this makes the function idempotent.
  */
 export async function addConfidentialHeader(context: Word.RequestContext) {
     const sections = context.document.sections;
-    sections.load("items");
+    sections.load('items');
     await context.sync();
 
     if (sections.items.length > 0) {
         const header = sections.items[0].getHeader(Word.HeaderFooterType.primary);
         const range = header.getRange();
-        range.load("text");
+        range.load('text');
         await context.sync();
 
-        // Check if header already exists to avoid duplication
-        if (!range.text.includes("CONFIDENTIAL DOCUMENT")) {
-            const p = header.insertParagraph("CONFIDENTIAL DOCUMENT", "Start");
-            p.font.bold = true;
-            p.font.color = "#D83B01"; // Professional dark orange/red
-            p.font.size = 14;
-            p.alignment = Word.Alignment.centered;
+        // Avoid adding duplicate headers on repeated runs.
+        if (!range.text.includes('CONFIDENTIAL DOCUMENT')) {
+            const paragraph = header.insertParagraph('CONFIDENTIAL DOCUMENT', 'Start');
+            paragraph.font.bold = true;
+            paragraph.font.color = '#D83B01'; // orange‑red for high visibility
+            paragraph.font.size = 14;
+            paragraph.alignment = Word.Alignment.centered;
             await context.sync();
         }
     }
 }
 
 /**
- * Main function for document redaction.
- * 1. Enables Track Changes and Header.
- * 2. Scans the entire document body text.
- * 3. Sends text to the secure AI endpoint to identify sensitive data.
- * 4. Iteratively redacts found items while managing hyperlink removal.
- * 
- * @param context - The Word RequestContext.
- * @param onProgress - Callback function to update the UI with real-time status.
+ * Core redaction workflow.
+ *
+ * 1️⃣ Prepare the document (enable tracking + add header).
+ * 2️⃣ Pull the full text and ask the AI service to identify PII.
+ * 3️⃣ For each piece of sensitive data, replace it with a redacted token.
+ *    While we process each item we update the UI via `onProgress` so the
+ *    user sees a live "mission log".
  */
-export async function formatAndRedactDocument(context: Word.RequestContext, onProgress: (msg: string) => void) {
-    // 1. Enable Track Changes & Header
-    onProgress("Enabling Track Changes & Header...");
+export async function formatAndRedactDocument(
+    context: Word.RequestContext,
+    onProgress: (msg: string) => void
+) {
+    // ----- Step 1: Preparation -----
+    onProgress('Setting up document tracking...');
     await enableTrackChanges(context);
     await addConfidentialHeader(context);
 
-    // 2. Scan Document Body
-    onProgress("Reading document content...");
+    // ----- Step 2: Load document text -----
+    onProgress('Reading document content...');
     const body = context.document.body;
-    body.load("text");
+    body.load('text');
     await context.sync();
 
     const fullText = body.text.trim();
     if (!fullText) {
-        onProgress("Document is empty.");
+        onProgress('The document appears to be empty.');
         return;
     }
 
-    onProgress("Identifying sensitive information...");
+    // ----- Step 3: Ask AI for PII -----
+    onProgress('AI is identifying sensitive data...');
     try {
         const response = await fetch('/api/redact', {
             method: 'POST',
@@ -88,63 +93,79 @@ export async function formatAndRedactDocument(context: Word.RequestContext, onPr
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || response.statusText);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.error || 'AI Service Unavailable');
         }
 
-        const data = await response.json();
-        const piiList: string[] = data.pii || [];
+        const { pii = [] } = await response.json();
+        if (pii.length === 0) {
+            onProgress("No sensitive data found. You're clear!");
+            return;
+        }
 
-        if (piiList.length > 0) {
-            onProgress(`Redacting ${piiList.length} unique items...`);
+        // ----- Step 4: Redact each item -----
+        let count = 0;
+        for (const item of pii) {
+            if (!item.trim()) continue;
+            count++;
+            // Show a concise progress update (ellipsis matches other messages).
+            onProgress(`Protecting data (${count}/${pii.length})...`);
 
-            // Apply redaction to all occurrences in the document
-            for (const pii of piiList) {
-                if (!pii.trim()) continue;
-
-                const searchResults = body.search(pii, { matchCase: false, ignorePunct: false });
-                searchResults.load("items");
-                await context.sync();
-
-                for (let j = 0; j < searchResults.items.length; j++) {
-                    const found = searchResults.items[j];
-
-                    /**
-                     * We need to remove the clickable link from the text without
-                     * creating a confusing "deletion" entry in the history.
-                     * Strategy:
-                     * 1. Temporarily disable Track Changes.
-                     * 2. Remove the hyperlink property (so Word doesn't keep the link
-                     * and make the [REDACTED] card clickable).
-                     * 3. Re-enable Track Changes.
-                     * 4. Perform the visible text replacement (this is tracked).
-                     */
-
-                    // 1. Turn OFF Track Changes to remove hyperlink silently
-                    context.document.changeTrackingMode = Word.ChangeTrackingMode.off;
-                    found.hyperlink = ""; // Strips the link property
-
-                    // 2. Turn Track Changes BACK ON for the actual redaction
-                    context.document.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
-
-                    // 3. Apply Redaction (Tracked)
-                    // Replaces the original text with [REDACTED] within a black box
-                    const redacted = found.insertText("[REDACTED]", Word.InsertLocation.replace);
-                    redacted.font.highlightColor = "#000000"; // Solid Black background
-                    redacted.font.color = "#FFFFFF"; // White text for contrast
-                    redacted.font.bold = false;
-                }
-            }
+            const searchResults = body.search(item, { matchCase: false, ignorePunct: false });
+            searchResults.load('items');
             await context.sync();
-            onProgress(`Successfully redacted ${piiList.length} items!`);
-        } else {
-            onProgress("No sensitive information found.");
+
+            for (const found of searchResults.items) {
+                // --- Hyperlink handling ---
+                // Turn tracking off temporarily so the hyperlink removal isn't logged.
+                context.document.changeTrackingMode = Word.ChangeTrackingMode.off;
+                found.hyperlink = '';
+                // Turn tracking back on for the visible redaction.
+                context.document.changeTrackingMode = Word.ChangeTrackingMode.trackAll;
+
+                // Replace the found text with a blacked‑out token.
+                const redacted = found.insertText('[REDACTED]', Word.InsertLocation.replace);
+                redacted.font.highlightColor = '#000000'; // black background
+                redacted.font.color = '#FFFFFF'; // white text
+                redacted.font.bold = false;
+            }
         }
 
-    } catch (e: any) {
-        console.error("Error processing document", e);
-        throw e;
+        await context.sync();
+        onProgress(`Mission accomplished! ${pii.length} items secured.`);
+    } catch (err: any) {
+        console.error('Redaction workflow failed:', err);
+        throw err;
     }
 
-    onProgress("Done!");
+    // Final status – everything is done.
+    onProgress('Done!');
+}
+
+/**
+ * Undo all redactions and remove the confidential header.
+ *
+ * This function is useful if the user decides the automated changes
+ * were too aggressive. It simply rejects every tracked change in the
+ * body and the header, restoring the original document state.
+ */
+export async function rejectAllChanges(context: Word.RequestContext) {
+    // Word API 1.6 introduced document‑level rejection of tracked changes.
+    if (Office.context.requirements.isSetSupported('WordApi', '1.6')) {
+        // ---- Clean the body ----
+        const bodyChanges = context.document.body.getTrackedChanges();
+        bodyChanges.rejectAll();
+
+        // ---- Clean the header ----
+        const header = context.document.sections.getFirst().getHeader(Word.HeaderFooterType.primary);
+        header.getTrackedChanges().rejectAll();
+
+        await context.sync();
+    } else {
+        // Fallback for older Word versions – the user must revert manually.
+        throw new Error(
+            "Your version of Word doesn't support automatic rejection. " +
+            "You can still reject changes manually from the 'Review' tab."
+        );
+    }
 }
