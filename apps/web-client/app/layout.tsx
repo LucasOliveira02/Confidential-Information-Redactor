@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import Script from 'next/script';
 import React from 'react';
-import { HistoryPolyfill } from './components/HistoryPolyfill';
+import { Polyfill } from './components/polyfill';
 
 export const metadata: Metadata = {
     title: 'Confidential Information Redactor',
@@ -16,7 +16,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <HistoryPolyfill />
+                <Polyfill />
             </head>
             <body suppressHydrationWarning>
                 <Script
