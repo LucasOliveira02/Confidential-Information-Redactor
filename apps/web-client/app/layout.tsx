@@ -1,6 +1,4 @@
 /*
- * Root Layout Component
- * --------------------
  * This file defines the top‑level layout for the Next.js application.
  * It imports the global stylesheet, sets up basic metadata (title and
  * favicon), and injects the Office.js script required for the Word add‑in.
