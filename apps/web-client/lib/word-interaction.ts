@@ -163,8 +163,15 @@ export async function rejectAllChanges(context: Word.RequestContext) {
         bodyChanges.rejectAll();
 
         // ---- Clean the header ----
-        const header = context.document.sections.getFirst().getHeader(Word.HeaderFooterType.primary);
-        header.getTrackedChanges().rejectAll();
+        // This is wrapped in a try/catch because accessing headers in Word Web
+        // can sometimes throw a RichApi.Error if the header is not fully loaded.
+        // We prioritise body rejection; if header fails, we log a warning.
+        try {
+            const header = context.document.sections.getFirst().getHeader(Word.HeaderFooterType.primary);
+            header.getTrackedChanges().rejectAll();
+        } catch (error) {
+            console.warn("Could not reject header changes:", error);
+        }
 
         await context.sync();
     } else {
