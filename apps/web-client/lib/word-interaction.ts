@@ -36,19 +36,25 @@ export async function addConfidentialHeader(context: Word.RequestContext) {
     await context.sync();
 
     if (sections.items.length > 0) {
-        const header = sections.items[0].getHeader(Word.HeaderFooterType.primary);
-        const range = header.getRange();
-        range.load('text');
-        await context.sync();
-
-        // Avoid adding duplicate headers on repeated runs.
-        if (!range.text.includes('CONFIDENTIAL DOCUMENT')) {
-            const paragraph = header.insertParagraph('CONFIDENTIAL DOCUMENT', 'Start');
-            paragraph.font.bold = true;
-            paragraph.font.color = '#D83B01'; // orange‑red for high visibility
-            paragraph.font.size = 14;
-            paragraph.alignment = Word.Alignment.centered;
+        try {
+            const header = sections.items[0].getHeader(Word.HeaderFooterType.primary);
+            // Use search to check if the header already exists – this avoids
+            // loading the entire header text which can fail in some contexts.
+            const searchResults = header.search('CONFIDENTIAL DOCUMENT', { matchCase: true });
+            searchResults.load('items');
             await context.sync();
+
+            if (searchResults.items.length === 0) {
+                const paragraph = header.insertParagraph('CONFIDENTIAL DOCUMENT', 'Start');
+                paragraph.font.bold = true;
+                paragraph.font.color = '#D83B01'; // orange‑red for high visibility
+                paragraph.font.size = 14;
+                paragraph.alignment = Word.Alignment.centered;
+                await context.sync();
+            }
+        } catch (error) {
+            console.warn("Could not add confidential header:", error);
+            // Suppress error so redaction (the main task) can proceed
         }
     }
 }
