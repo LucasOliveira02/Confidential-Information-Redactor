@@ -6,14 +6,14 @@
  *
  * The component is deliberately split into logical sections with clear
  * comments so future contributors can quickly understand the flow:
- *   1️⃣ State & refs – React state for Office readiness, processing flag,
+ *   1. State & refs – React state for Office readiness, processing flag,
  *      and a mutable ref to track component mount status.
- *   2️⃣ Effects – One effect waits for Office.js to become ready; a second
+ *   2. Effects – One effect waits for Office.js to become ready; a second
  *      watches the branding header size to keep button widths in sync.
- *   3️⃣ Handlers – `handleRedact` starts the redaction process, while
+ *   3. Handlers – `handleRedact` starts the redaction process, while
  *      `handleReject` rolls back all changes via the `rejectAllChanges`
  *      helper.
- *   4️⃣ Render – The UI consists of a branding header, two action blocks
+ *   4. Render – The UI consists of a branding header, two action blocks
  *      (protect & revert), a status‑feed, and a feedback footer.
  */
 "use client";
@@ -202,7 +202,7 @@ export default function TaskPane() {
         .status-text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.15em; text-align: center; animation: status-blink 2s ease-in-out infinite; }
         @keyframes status-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
         .feedback-section { margin-top: auto; padding: 32px 0 16px; }
-        .feedback-text { color: var(--text-secondary); }
+        .feedback-text { color: var(--text-secondary); text-align: center; font-size: clamp(11px, 3.5vw, 13px); }
         .feedback-link { color: var(--primary); text-decoration: underline; cursor: pointer; }
       `}</style>
     </div>

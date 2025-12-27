@@ -20,12 +20,12 @@ import { NextResponse } from "next/server";
 /**
  * POST handler for the /api/redact endpoint.
  *
- * 1️⃣ Validate the request payload and ensure the Gemini API key is set.
- * 2️⃣ Initialise the Generative AI client and configure the model.
- * 3️⃣ Build a system prompt that asks the model to list every piece of
+ * 1. Validate the request payload and ensure the Gemini API key is set.
+ * 2. Initialise the Generative AI client and configure the model.
+ * 3. Build a system prompt that asks the model to list every piece of
  *    sensitive information in the supplied text.
- * 4️⃣ Parse the model's response, sanitising any markdown wrappers.
- * 5️⃣ Return the extracted array, or an error if parsing fails.
+ * 4. Parse the model's response, sanitising any markdown wrappers.
+ * 5. Return the extracted array, or an error if parsing fails.
  */
 export async function POST(req: Request) {
     console.log(">>> API called");
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         const { text } = await req.json();
 
         // ---------------------------------------------------------------------
-        // 1️⃣ Environment validation
+        // 1. Environment validation
         // ---------------------------------------------------------------------
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         }
 
         // ---------------------------------------------------------------------
-        // 2️⃣ Initialise Gemini client
+        // 2. Initialise Gemini client
         // ---------------------------------------------------------------------
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel(
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         );
 
         // ---------------------------------------------------------------------
-        // 3️⃣ AI Prompt
+        // 3. AI Prompt
         // ---------------------------------------------------------------------
         const prompt = `Identify all sensitive information in the following text that should be redacted for confidentiality. Include but do not limit to:
 
@@ -78,7 +78,7 @@ Text to analyse:
         let rawText = response.text();
 
         // ---------------------------------------------------------------------
-        // 4️⃣ Clean up the response – strip any markdown fences and extract []
+        // 4. Clean up the response – strip any markdown fences and extract []
         // ---------------------------------------------------------------------
         const startIdx = rawText.indexOf('[');
         const endIdx = rawText.lastIndexOf(']');
@@ -100,7 +100,7 @@ Text to analyse:
         }
 
         // ---------------------------------------------------------------------
-        // 5️⃣ Return the list of detected items
+        // 5. Return the list of detected items
         // ---------------------------------------------------------------------
         return NextResponse.json({ pii });
     } catch (error: unknown) {
