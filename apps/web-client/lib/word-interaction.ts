@@ -159,14 +159,22 @@ export async function rejectAllChanges(context: Word.RequestContext) {
     // Word API 1.6 introduced document‑level rejection of tracked changes.
     if (Office.context.requirements.isSetSupported('WordApi', '1.6')) {
         // ---- Clean the body ----
+        // ---- Clean the body ----
         const bodyChanges = context.document.body.getTrackedChanges();
         bodyChanges.rejectAll();
+        // Sync body changes first to ensure they are applied successfully.
+        await context.sync();
 
         // ---- Clean the header ----
-        const header = context.document.sections.getFirst().getHeader(Word.HeaderFooterType.primary);
-        header.getTrackedChanges().rejectAll();
-
-        await context.sync();
+        // We isolate the header rejection in its own sync block.
+        // If this specific sync fails (common in Word Web), it won't affect the body changes.
+        try {
+            const header = context.document.sections.getFirst().getHeader(Word.HeaderFooterType.primary);
+            header.getTrackedChanges().rejectAll();
+            await context.sync();
+        } catch (error) {
+            console.warn("Could not reject header changes (likely empty or inaccessible):", error);
+        }
     } else {
         // Fallback for older Word versions – the user must revert manually.
         throw new Error(
