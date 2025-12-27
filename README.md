@@ -19,11 +19,14 @@ These instructions assume a fresh installation on a new machine.
 
 ### 2. Configure Environment Secrets
 This project requires a Gemini API key to function.
-1. Create a file named `.env.local` in the `apps/web-client` directory.
+1. Create a file named `env.local` in the `apps/web-client` directory.
 2. Add your API key to it:
    ```env
    GEMINI_API_KEY=your_api_key_here
    ```
+3. Rename it to `.env.local` (the `.` is important). You might need the terminal to do this, since the .env is often reserved for system files.
+   - On mac, navigate to the `apps/web-client` directory and run `mv env.local .env.local` to rename it. The file should disappear from the folder.
+   - On windows, navigate to the `apps/web-client` directory and run `ren env.local .env.local` to rename it. The file should disappear from the folder.
 
 ### 3. Run the Development Server
 1. Start the server and sideload the add-in:
