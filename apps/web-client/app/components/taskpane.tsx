@@ -33,20 +33,40 @@ export default function TaskPane() {
   const [buttonWidth, setButtonWidth] = React.useState<number | undefined>(undefined);
 
   // ---------- Office Initialization Effect ----------
+  // ---------- Office Initialization Effect ----------
+  // We use a robust polling mechanism instead of a single check because `Office.js`
+  // loads asynchronously and might not be defined immediately when the component mounts.
   React.useEffect(() => {
     isMounted.current = true;
-    const timer = setTimeout(() => {
+    let attempts = 0;
+
+    const checkOffice = () => {
+      // If Office is ready, hook into `onReady`
       if (typeof Office !== "undefined") {
         Office.onReady((info) => {
           if (isMounted.current && info.host === Office.HostType.Word) {
             setIsOfficeInitialized(true);
           }
         });
+        return true; // Found it!
       }
-    }, 0);
+      return false; // Not yet...
+    };
+
+    // Attempt 1: Immediate check
+    if (checkOffice()) return;
+
+    // Attempt 2: Polling every 100ms for up to 5 seconds
+    const intervalId = setInterval(() => {
+      attempts++;
+      if (checkOffice() || attempts > 50) {
+        clearInterval(intervalId);
+      }
+    }, 100);
+
     return () => {
       isMounted.current = false;
-      clearTimeout(timer);
+      clearInterval(intervalId);
     };
   }, []);
 
