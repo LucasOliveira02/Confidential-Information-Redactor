@@ -4,7 +4,7 @@ These instructions assume a fresh installation on a new machine.
 ### Prerequisites
 - **Node.js**: Version 18 or higher.
 - **Office 365**: Word Desktop or Word on the Web.
-- **Gemini API Key**: Get one from [Google AI Studio](https://aistudio.google.com/app/apikey). For the sake of this challenge, please contact me directly if you need a key.
+- **Gemini API Key**: Get one from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### 1. Setup the Project
 1. Unzip the project or clone the repository.
